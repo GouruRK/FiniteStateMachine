@@ -1052,20 +1052,11 @@ class FiniteStateMachine:
         # for each new states, create relations between them
         for q, p in new_states:
             for letter in self.get_alphabet():
-                # for each letter, check the relations from q to another state in `self`
-                # for each letter, check the relations from p to another state in `fsm`
-                
+                # for each letter, check the relations from q to another state in `self`               
                 next_states_q = {state for state in self.get_rel(q) if letter in self.get_cond(q, state)}
-                # next_states_q = set()
-                # for state in self.get_rel(q):
-                #     if letter in self.get_cond(q, state):
-                #         next_states_q.add(state)
                 
+                # for each letter, check the relations from p to another state in `fsm`
                 next_states_p = {state for state in fsm.get_rel(p) if letter in fsm.get_cond(p, state)}
-                # next_states_p = set()
-                # for state in fsm.get_rel(p):
-                #     if letter in fsm.get_cond(p, state):
-                #         next_states_p.add(state)
                 
                 # the next states from (q, p) is the product of the two sets above
                 # add the relations
@@ -1076,9 +1067,35 @@ class FiniteStateMachine:
         return a
         
     def intersection(self, fsm: 'FiniteStateMachine') -> 'FiniteStateMachine':
+        """Create a FubuteStateMachine that admit the intersection of two 
+        languages represented by two FiniteStateMachines : `self` and `fsm`.
+
+        Parameters
+        ----------
+        fsm : FiniteStateMachine
+            The state machine that represent the other language
+
+        Returns
+        -------
+        FiniteStateMachine
+            A new automaton that admit the intersection of two languages
+        """
         a = self.product(fsm)
         a.Qf = set(product(self.get_finals_states(), fsm.get_finals_states()))
         return a
     
     def __and__(self, fsm: 'FiniteStateMachine') -> 'FiniteStateMachine':
+        """Create a FubuteStateMachine that admit the intersection of two 
+        languages represented by two FiniteStateMachines : `self` and `fsm`.
+
+        Parameters
+        ----------
+        fsm : FiniteStateMachine
+            The state machine that represent the other language
+
+        Returns
+        -------
+        FiniteStateMachine
+            A new automaton that admit the intersection of two languages
+        """
         return self.intersection(fsm)
