@@ -1099,3 +1099,64 @@ class FiniteStateMachine:
             A new automaton that admit the intersection of two languages
         """
         return self.intersection(fsm)
+    
+    def difference(self, fsm: 'FiniteStateMachine') -> 'FiniteStateMachine':
+        """Create a FiniteState that admit the difference of two languages
+        represented by two FiniteStateMachine : `self` and `fsm`.
+
+        Parameters
+        ----------
+        fsm : FiniteStateMachine
+            The state machine that represent the other language
+            Must be deterministic and complete. It will set `fsm`
+            deterministic and complete if not
+
+        Returns
+        -------
+        FiniteStateMachine
+            A new automaton that admit the difference of two languages
+
+        Raises
+        ------
+        NotImplementedError
+            `fsm` must be of type FiniteStateMachine
+        """
+        if not isinstance(fsm, FiniteStateMachine):
+            raise NotImplementedError
+        # fsm must be deterministic and complete
+        if not fsm.is_deterministic():
+            # setting a finite state machine deterministic
+            # also set it completed
+            fsm = fsm.set_deterministic()
+        elif not fsm.is_complete():
+            fsm = fsm.set_complete()
+        a = self.product(fsm)
+        # the difference between two languages can be represented by the 
+        # product finite state machine with its finals states :
+        # Qf = self.Q x (fsm.Q - fsm.Qf)
+        a.Qf = set(product(self.get_states(), 
+                           fsm.get_states() - fsm.get_finals_states()))
+        return a
+
+    def __sub__(self, fsm: 'FiniteStateMachine'):
+        """Create a FiniteState that admit the difference of two languages
+        represented by two FiniteStateMachine : `self` and `fsm`.
+
+        Parameters
+        ----------
+        fsm : FiniteStateMachine
+            The state machine that represent the other language
+            Must be deterministic and complete. It will set `fsm`
+            deterministic and complete if not
+
+        Returns
+        -------
+        FiniteStateMachine
+            A new automaton that admit the difference of two languages
+
+        Raises
+        ------
+        NotImplementedError
+            `fsm` must be of type FiniteStateMachine
+        """
+        return self.difference(fsm)
