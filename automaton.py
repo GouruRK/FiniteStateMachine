@@ -2,6 +2,7 @@ from collections import deque
 from typing import Any
 from itertools import product
 
+
 class FiniteStateMachine:
     def __init__(
         self,
@@ -112,7 +113,7 @@ class FiniteStateMachine:
             Letters that compose the automaton's alphabet
         """
         return self.alphabet
-    
+
     def get_relations(self) -> dict[Any, set[Any]]:
         """Get all relations of the finite state machine.
 
@@ -122,7 +123,7 @@ class FiniteStateMachine:
             Relations
         """
         return self.relations
-    
+
     def get_rel(self, a: Any) -> set[Any]:
         """Get all states that are connected to `a`.
 
@@ -140,7 +141,7 @@ class FiniteStateMachine:
         if a in relations:
             return relations[a]
         return {}
-    
+
     def get_conditions(self) -> dict[tuple[Any, Any], set[str]]:
         """Get all conditions between states of the finie state machine.
 
@@ -220,7 +221,7 @@ class FiniteStateMachine:
         if a in relations:
             return b in relations[a]
         return False
-    
+
     def add_state(self, a: Any):
         """Add a new state in 'Q' called 'a'.
 
@@ -270,7 +271,7 @@ class FiniteStateMachine:
             conditions[key].add(c)
         else:
             conditions[key] = {c}
-        
+
     def remove_condition(self, a: Any, b: Any, c: str) -> None:
         """Remove a condition `c` between two states `a` and `b`.
 
@@ -288,7 +289,7 @@ class FiniteStateMachine:
         cond = self.get_cond(a, b)
         if c in cond:
             cond.remove(c)
-    
+
     def remove_relation(self, a: Any, b: Any):
         """Remove a relation between two states `a` and `b`.
 
@@ -557,7 +558,7 @@ class FiniteStateMachine:
             if self._admit(word, src):
                 return True
         return False
-    
+
     def is_state_accessible(self, q: Any) -> bool:
         """Check is a state `q` is accessible. `q` is accessible
         if there is a path from one initital state to `q`.
@@ -576,7 +577,7 @@ class FiniteStateMachine:
             if self.exist_path(qi, q):
                 return True
         return False
-    
+
     def is_state_co_accessible(self, q: Any) -> bool:
         """Check is a state `q` is co-accessible. `q` is co-accessible
         if there is a path from `q` to one final state.
@@ -595,7 +596,7 @@ class FiniteStateMachine:
             if self.exist_path(q, qf):
                 return True
         return False
-    
+
     def is_deterministic(self) -> bool:
         """Check if the automaton is deterministic.
         An automaton is deterministic if for each state of the automaton,
@@ -730,7 +731,7 @@ class FiniteStateMachine:
         while len(queue):
             states = tuple(queue.popleft())
             done.add(states)
-            
+
             # for a letter from each q that compose `states`,
             # get all the possible states
             for letter in a.get_alphabet():
@@ -739,18 +740,18 @@ class FiniteStateMachine:
                 for q in states:
                     # add all next states that you can reach from one letter
                     next_states |= self.possible_path(q, letter)
-                
+
                 # check if there are finals states in the new_states
                 if len(next_states & self.get_finals_states()):
                     is_final = True
                 new_state = tuple(next_states)
                 if not len(new_state):
-                    
+
                     # new_state is empty. You can reach no states with current
                     # letter : create a trash_states
                     a.add_state(trash_states)
                     a.create_loop(trash_states)
-                    
+
                     # add a condition between states and the new trash_state
                     a.add_condition(states, trash_states, letter)
                     trash_states += 1
@@ -764,7 +765,7 @@ class FiniteStateMachine:
                     if is_final:
                         a.Qf.add(new_state)
         return a
-    
+
     def set_accessible(self):
         """Convert the current automaton into an accessible automaton
         that guarantee the same language (because you can't go to some
@@ -783,7 +784,7 @@ class FiniteStateMachine:
             if not a.is_state_accessible(q):
                 a.remove_state(q)
         return a
-    
+
     def set_co_accessible(self):
         """Convert the current automaton into an co-accessobme automaton
         that guarantee the same language (because when you are in this state,
@@ -823,7 +824,7 @@ class FiniteStateMachine:
         # becomes older non-final states
         a.Qf = a.Q - a.Qf
         return a
-    
+
     def __neg__(self):
         """Create an automaton that accept the complementary
         of the current accepted language.
@@ -833,7 +834,6 @@ class FiniteStateMachine:
         FiniteStateMachine
         """
         return self.complementary()
-        
 
     def rework_states(self, d_states: None | dict[Any, Any] = None) -> 'FiniteStateMachine':
         """Rework the names of states and return a new FiniteStateMachine
@@ -852,28 +852,28 @@ class FiniteStateMachine:
         """
         if d_states is None:
             # create a dictionnary with all the states and their new names
-            d_states = {name: (new_name + 1) 
+            d_states = {name: (new_name + 1)
                         for new_name, name in enumerate(self.get_states())}
-        
-        # creates the new named collections `states`, `initial_states` and 
+
+        # creates the new named collections `states`, `initial_states` and
         # `final_states`
         new_states = {d_states[q] for q in self.get_states()}
         new_init_states = {d_states[q] for q in self.get_initials_states()}
         new_final_states = {d_states[q] for q in self.get_finals_states()}
-        
+
         # re-create relations with the new names
         new_rel = {
-            d_states[q]: {d_states[p] for p in self.get_rel(q)} 
+            d_states[q]: {d_states[p] for p in self.get_rel(q)}
             for q in self.get_relations()
         }
-        
+
         # re-create conditions with the new names
         new_cond = {
             (d_states[q[0]], d_states[q[1]]): self.get_conditions()[q].copy()
             for q in self.get_conditions()
         }
-        
-        # Create a new FiniteStateMachine with all new names for states 
+
+        # Create a new FiniteStateMachine with all new names for states
         a = FiniteStateMachine(self.alphabet.copy())
         a.Q = new_states
         a.Qi = new_init_states
@@ -903,32 +903,32 @@ class FiniteStateMachine:
             f.write("digraph finite_state_machine {\n")
             f.write("\trankdir=LR;\n")
             f.write('\tsize="8,5"\n\n')
-            
+
             # draw arrow for initials states
             for ind, qi in enumerate(Qi):
                 f.write(f"\tnode [shape = point] qi_{ind};\n")
                 d_index_init[qi] = ind
-            
+
             # draw finals states
             for qf in Qf:
                 f.write(f'\tnode [shape = doublecircle, label="{qf}"] {aliases[qf]};\n')
                 if qf in Qi:
                     f.write(f"\tqi_{d_index_init[qf]} -> {aliases[qf]}\n")
-            
+
             # draw states that are not final states
             for q in others:
                 f.write(f'\tnode [shape = circle, label="{q}"] {aliases[q]};\n')
                 if q in Qi:
                     f.write(f"\tqi_{d_index_init[q]} -> {aliases[q]}\n")
-            
+
             # draw relations between states
             for a, b in self.get_conditions():
                 r = ",".join(sorted(list(self.get_cond(a, b))))
                 f.write(f'\t{aliases[a]} -> {aliases[b]} [label="{r}"];\n')
-            
+
             # footer
             f.write("}")
-    
+
     def create_different_states_names(self, fsm: 'FiniteStateMachine') -> 'FiniteStateMachine':
         """Create differents names for the states of `fsm` if `self` and `fsm`
         have common names states.
@@ -962,9 +962,9 @@ class FiniteStateMachine:
                 new_name += 1
             return fsm.rework_states(rename)
         return fsm
-    
+
     def union(self, fsm: 'FiniteStateMachine') -> 'FiniteStateMachine':
-        """Create a FiniteStateMachine that admit the union of two 
+        """Create a FiniteStateMachine that admit the union of two
         langaguges represented by two FiniteStateMachines : `self` and `fsm`.
 
         Parameters
@@ -987,7 +987,7 @@ class FiniteStateMachine:
         # Check if they have common states name. If so, rename them
         fsm = self.create_different_states_names(fsm)
         a = self.copy()
-        # To create the union of two automatons, just create a third one 
+        # To create the union of two automatons, just create a third one
         # that includes them
         a.Q |= fsm.get_states()
         a.Qi |= fsm.get_initials_states()
@@ -997,7 +997,7 @@ class FiniteStateMachine:
         return a
 
     def __or__(self, fsm: 'FiniteStateMachine') -> 'FiniteStateMachine':
-        """Create a FiniteStateMachine that admit the union of two 
+        """Create a FiniteStateMachine that admit the union of two
         langaguges represented by two FiniteStateMachines : `self` and `fsm`.
 
         Parameters
@@ -1016,7 +1016,7 @@ class FiniteStateMachine:
             if `fsm` is not a FiniteStateMachine
         """
         return self.union(fsm)
-    
+
     def product(self, fsm: 'FiniteStateMachine') -> 'FiniteStateMachine':
         """Create the product of two FiniteStateMachine.
 
@@ -1028,7 +1028,7 @@ class FiniteStateMachine:
         Returns
         -------
         FiniteStateMachine
-            A new FiniteStateMachine that does not have final states. The 
+            A new FiniteStateMachine that does not have final states. The
             choosing of the final states depends on what the user wants to
             do with the product
 
@@ -1045,29 +1045,31 @@ class FiniteStateMachine:
             return ValueError("Alphabets must be similar")
         fsm = self.create_different_states_names(fsm)
         new_states = set(product(self.get_states(), fsm.get_states()))
-        
+
         a = FiniteStateMachine(self.get_alphabet())
         a.Q = new_states
-        
+
         # for each new states, create relations between them
         for q, p in new_states:
             for letter in self.get_alphabet():
-                # for each letter, check the relations from q to another state in `self`               
-                next_states_q = {state for state in self.get_rel(q) if letter in self.get_cond(q, state)}
-                
+                # for each letter, check the relations from q to another state in `self`
+                next_states_q = {state for state in self.get_rel(q)
+                                 if letter in self.get_cond(q, state)}
+
                 # for each letter, check the relations from p to another state in `fsm`
-                next_states_p = {state for state in fsm.get_rel(p) if letter in fsm.get_cond(p, state)}
-                
+                next_states_p = {state for state in fsm.get_rel(p)
+                                 if letter in fsm.get_cond(p, state)}
+
                 # the next states from (q, p) is the product of the two sets above
                 # add the relations
                 for next_state in set(product(next_states_q, next_states_p)):
                     a.add_condition((q, p), next_state, letter)
-                        
+
         a.Qi = set(product(self.get_initials_states(), fsm.get_initials_states()))
         return a
-        
+
     def intersection(self, fsm: 'FiniteStateMachine') -> 'FiniteStateMachine':
-        """Create a FubuteStateMachine that admit the intersection of two 
+        """Create a FubuteStateMachine that admit the intersection of two
         languages represented by two FiniteStateMachines : `self` and `fsm`.
 
         Parameters
@@ -1083,9 +1085,9 @@ class FiniteStateMachine:
         a = self.product(fsm)
         a.Qf = set(product(self.get_finals_states(), fsm.get_finals_states()))
         return a
-    
+
     def __and__(self, fsm: 'FiniteStateMachine') -> 'FiniteStateMachine':
-        """Create a FubuteStateMachine that admit the intersection of two 
+        """Create a FubuteStateMachine that admit the intersection of two
         languages represented by two FiniteStateMachines : `self` and `fsm`.
 
         Parameters
@@ -1099,7 +1101,7 @@ class FiniteStateMachine:
             A new automaton that admit the intersection of two languages
         """
         return self.intersection(fsm)
-    
+
     def difference(self, fsm: 'FiniteStateMachine') -> 'FiniteStateMachine':
         """Create a FiniteState that admit the difference of two languages
         represented by two FiniteStateMachine : `self` and `fsm`.
@@ -1131,10 +1133,10 @@ class FiniteStateMachine:
         elif not fsm.is_complete():
             fsm = fsm.set_complete()
         a = self.product(fsm)
-        # the difference between two languages can be represented by the 
+        # the difference between two languages can be represented by the
         # product finite state machine with its finals states :
         # Qf = self.Q x (fsm.Q - fsm.Qf)
-        a.Qf = set(product(self.get_states(), 
+        a.Qf = set(product(self.get_states(),
                            fsm.get_states() - fsm.get_finals_states()))
         return a
 
@@ -1160,3 +1162,33 @@ class FiniteStateMachine:
             `fsm` must be of type FiniteStateMachine
         """
         return self.difference(fsm)
+
+    def Kleene(self) -> 'FiniteStateMachine':
+        """Implement the Kleene star operator for automaton.
+        See this article for more information
+        https://en.wikipedia.org/wiki/Kleene_star
+
+        Returns
+        -------
+        FiniteStateMachine
+            A new automaton that admit the language with a Kleene star
+        """
+        # looking for all states right after initials states and using
+        # what condition
+        next_init_states = {}
+        for q in self.get_initials_states():
+            for p in self.get_rel(q):
+                if p not in next_init_states:
+                    next_init_states[p] = set()
+                next_init_states[p] |= self.get_cond(q, p)
+
+        a = self.copy()
+
+        # add relation between finals states and states next to initials
+        # states
+        for q in self.get_finals_states():
+            for p, c in next_init_states.items():
+                for cond in c:
+                    a.add_condition(q, p, cond)
+
+        return a
