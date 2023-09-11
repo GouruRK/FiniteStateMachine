@@ -1,8 +1,10 @@
 class Node:
     count = 0
     
-    def __init__(self):
+    def __init__(self, initial=False, final=False):
         self.id = Node.count
+        self.initial = initial
+        self.final = final
         self.neighbors = set()
         Node.count += 1
     
@@ -56,10 +58,21 @@ class Graph:
             return
         self.get_node(start).connect(self.get_node(end))
         self.edges[(start, end)] = value
-            
-    
+
     def deconnect(self, start: Node, end: Node):
         if (not self.check_node(start)) or (not self.check_node(end)):
             return
         start.deconnect(end)
         self.edges.pop((start.id, end.id))
+
+    def gen_id(self) -> int:
+        for id in self.node_table:
+            yield id
+    
+    def gen_node(self) -> Node:
+        for node in self.node_table.values():
+            yield node
+    
+    def gen_node_id(self) -> tuple[int, Node]:
+        for infos in self.node_table.items():
+            yield infos
