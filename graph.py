@@ -20,8 +20,19 @@ class Graph:
     def __init__(self):
         # table[id] = node
         self.node_table = {}
+        # edges[id, id] = value
         self.edges = {}
     
+    def cast_to_node(func):
+        def cast(self, node1, node2, *args):
+            if isinstance(node1, int):
+                node1 = self.get_node(node1)
+            if isinstance(node2, int):
+                node2 = self.get_node(node2)
+
+            return func(self, node1, node2, *args)
+        return cast
+        
     def get_node(self, id: int):
         if id in self.node_table:
             return self.node_table[id]
@@ -37,31 +48,27 @@ class Graph:
             return
         self.node_table[node.id] = node
     
-    def remove_node(self, node: Node):
+    def remove_node(self, node: int | Node):
         if not self.check_node(node):
             return
-        for n in self.node_table.items():
+        for n in self.gen_node():
             n.deconnect(node)
             node.deconnect(n)
+        self.node_table.pop(node.id)
         return n
     
-    def connect(self, start: Node, end: Node, value: str):
+    @cast_to_node
+    def connect(self, start: int | Node , end: int | Node, value: str):
         if not self.check_node(start):
             self.add_node(start)
         if not self.check_node(end):
             self.add_node(end)
+            
         start.connect(end)
         self.edges[(start.id, end.id)] = value
-        
-    def connect_id(self, start: int, end: int, value: str):
-        if not (start in self.node_table) and (end in (self.node_table)):
-            return
-        self.get_node(start).connect(self.get_node(end))
-        self.edges[(start, end)] = value
 
-    def deconnect(self, start: Node, end: Node):
-        if (not self.check_node(start)) or (not self.check_node(end)):
-            return
+    @cast_to_node
+    def deconnect(self, start: int | Node, end: int | Node):
         start.deconnect(end)
         self.edges.pop((start.id, end.id))
 
@@ -76,3 +83,18 @@ class Graph:
     def gen_node_id(self) -> tuple[int, Node]:
         for infos in self.node_table.items():
             yield infos
+
+    @cast_to_node
+    def exist_path(self, start: int | Node, end: int | Node, done: set | None = None):
+        if done is None:
+            done = set()
+
+        if start.id == end.id:
+            return True
+        if start.id in done:
+            return False
+        done.add(start.id)
+        for node in start.neighbors:
+            if self.exist_path(node, end, done):
+                return True
+        return False
