@@ -55,6 +55,33 @@ class FSM:
     def exist_path(self, start: int | Node, end: int | Node):
         return self.graph.exist_path(start, end)
 
+    def to_dot(self, name: str):
+        with open(name + ".dot", "w") as f:
+            f.write("digraph finite_state_machine {\n")
+            f.write("\trankdir=LR;\n")
+            f.write('\tsize="8,5"\n\n')
+            
+            # draw arrow for initials states
+            for node in self.initials:
+                    f.write(f"\tnode [shape = point] qi{node.id};\n")
+            
+            # draw states
+            for id in self.graph.node_table:
+                if self.graph.get_node(id) in self.finals:
+                    f.write(f'\tnode [shape = doublecircle, label="{id}"] q{id};\n')
+                else:
+                    f.write(f'\tnode [shape = circle, label="{id}"] q{id};\n')
+                if self.graph.get_node(id) in self.initials:
+                    # draw link between the arrow and the node
+                    f.write(f"\tqi{id} -> q{id}\n")
+            
+            # draw connections
+            for start, end in self.graph.edges:
+                label = ",".join(sorted(list(self.graph.edges[(start, end)])))
+                f.write(f'\tq{start} -> q{end} [label="{label}"];\n')
+            
+            # footer
+            f.write("}")
 
 def create_fsm(table: list[tuple[int, int, str]], init: set[int], final: set[int]):
     graph = Graph()
@@ -74,8 +101,4 @@ if __name__ == '__main__':
         {1, 5}, {4})
     print(fsm1)
     print(fsm1.exist_path(0, 4))
-    
-    fsm2 = create_fsm(
-        [(1, 1, "1"), (1, 2, "0"), (2, 2, "1"), (2, 1, "0")],
-        {1}, {1})
-    print(fsm2)
+    fsm1.to_dot("automaton")
