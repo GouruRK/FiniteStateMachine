@@ -1,100 +1,50 @@
-class Node:
-    count = 0
-    
-    def __init__(self, initial=False, final=False):
-        self.id = Node.count
-        self.initial = initial
-        self.final = final
-        self.neighbors = set()
-        Node.count += 1
-    
-    def connect(self, node: 'Node'):
-        self.neighbors.add(node)
-    
-    def deconnect(self, node: 'Node'):
-        if node in self.neighbors:
-            self.neighbors.remove(node)
-    
 class Graph:
-    
     def __init__(self):
-        # table[id] = node
-        self.node_table = {}
-        # edges[id, id] = value
-        self.edges = {}
-    
-    def cast_to_node(func):
-        def cast(self, node1, node2, *args):
-            if isinstance(node1, int):
-                node1 = self.get_node(node1)
-            if isinstance(node2, int):
-                node2 = self.get_node(node2)
+        self.nodes = set()
+        self.table = {}
 
-            return func(self, node1, node2, *args)
-        return cast
-        
-    def get_node(self, id: int):
-        if id in self.node_table:
-            return self.node_table[id]
-    
-    def check_node(self, node: Node):
-        return self.check_id(node.id)
-    
-    def check_id(self, id: int):
-        return id in self.node_table
-    
-    def add_node(self, node: Node):
-        if self.check_node(node):
+    def add_node(self, node):
+        if node in self.nodes:
             return
-        self.node_table[node.id] = node
-    
-    def remove_node(self, node: int | Node):
-        if not self.check_node(node):
-            return
-        for n in self.gen_node():
-            n.deconnect(node)
-            node.deconnect(n)
-        self.node_table.pop(node.id)
-        return n
-    
-    @cast_to_node
-    def connect(self, start: int | Node , end: int | Node, value: str):
-        if not self.check_node(start):
-            self.add_node(start)
-        if not self.check_node(end):
-            self.add_node(end)
-            
-        start.connect(end)
-        self.edges[(start.id, end.id)] = value
+        self.nodes.add(node)
 
-    @cast_to_node
-    def deconnect(self, start: int | Node, end: int | Node):
-        start.deconnect(end)
-        self.edges.pop((start.id, end.id))
+    def connect(self, src, dest, value):
+        self.add_node(src)
+        self.add_node(dest)
 
-    def gen_id(self) -> int:
-        for id in self.node_table:
-            yield id
-    
-    def gen_node(self) -> Node:
-        for node in self.node_table.values():
-            yield node
-    
-    def gen_node_id(self) -> tuple[int, Node]:
-        for infos in self.node_table.items():
-            yield infos
+        if (src, dest) in self.table:
+            self.table[(src, dest)].add(value)
+        else:
+            self.table[(src, dest)] = {value}
 
-    @cast_to_node
-    def exist_path(self, start: int | Node, end: int | Node, done: set | None = None):
+    def remove_node(self, node):
+        if node in self.nodes:
+            to_del = set()
+            for couple in self.table:
+                if node in couple:
+                    to_del.add(couple)
+            for couple in to_del:
+                self.deconnect(*couple)
+            self.nodes.remove(node)
+    
+    def get_neighbours(self, node):
+        for src, dest in self.table:
+            if src == node:
+                yield dest
+
+    def deconnect(self, src, dest):
+        if (src, dest) in self.table:
+            self.table.pop((src, dest))
+
+    def exists_path(self, src, dest, done=None):
         if done is None:
             done = set()
-
-        if start.id == end.id:
+        if src == dest:
             return True
-        if start.id in done:
-            return False
-        done.add(start.id)
-        for node in start.neighbors:
-            if self.exist_path(node, end, done):
+        
+        done.add(src)
+        for node in self.get_neighbours(src):
+            if self.exists_path(node, dest, done):
                 return True
         return False
+        

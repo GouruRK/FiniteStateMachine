@@ -1,133 +1,130 @@
-from graph import Graph, Node
+from graph import Graph
 import graphviz
 
-class NodeNotExists(Exception):
-    pass
-
-class RFSM:
-    def __init__(self, graph: Graph):
+class FSM:
+    def __init__(self, graph: Graph, initials=None, finals=None):
         self.graph = graph
-        self.initials = set()
-        self.finals = set()
-        for node in graph.gen_node():
-            self.add_sub_set(node)
-
-    def add_sub_set(self, node: Node):
-        if node.initial:
-            self.initials.add(node)
-        if node.final:
-            self.finals.add(node)
-
-    def remove_node_sub_set(self, node: Node):
-        if node in self.initials:
-            self.initials.pop(node)
-        if node in self.finals:
-            self.finals.pop(node)
-
-    def add_node(self, node: Node):
-        self.add_sub_set(node)
-        self.graph.add_node(node)
-
-    def remove_node(self, node: int | Node):
-        if isinstance(node, int):
-            node = self.graph.get_node(node)
-        self.remove_node_sub_set(node)
-        self.graph.remove_node(node)
-
-    def connect(self, start: int | Node, end: int | Node, value: str):
-        if isinstance(start, Node):
-            self.add_sub_set(start)
-        if isinstance(end, Node):
-            self.add_sub_set(end)
-        self.graph.connect(start, end, value)
-
-    def deconnect(self, start: int | Node, end: int | Node):
-        self.graph.deconnect(start, end)
-
-    def __str__(self):
-        res = "Nodes : \n"
-        for id, node in self.graph.gen_node_id():
-            res += f"id: {id} <I: {node.initial}, F: {node.final}>\n"
-        res += "\nConnections :\n"
-        for id1 in self.graph.gen_id():
-            for id2 in self.graph.gen_id():
-                if (id1, id2) in self.graph.edges:
-                    res += f"{id1} --> {self.graph.edges[(id1, id2)]} --> {id2}\n"
-        return res
-
-    def exist_path(self, start: int | Node, end: int | Node):
-        return self.graph.exist_path(start, end)
-
-    def to_dot(self, name: str):
-        with open(name + ".dot", "w") as f:
-            f.write("digraph finite_state_machine {\n")
-            f.write("\trankdir=LR;\n")
-            f.write('\tsize="8,5"\n\n')
-
-            # draw arrow for initials states
-            for node in self.initials:
-                f.write(f"\tnode [shape = point] qi{node.id};\n")
-
-            # draw states
-            for id in self.graph.node_table:
-                if self.graph.get_node(id) in self.finals:
-                    f.write(f'\tnode [shape = doublecircle, label="{id}"] q{id};\n')
-                else:
-                    f.write(f'\tnode [shape = circle, label="{id}"] q{id};\n')
-                if self.graph.get_node(id) in self.initials:
-                    # draw link between the arrow and the node
-                    f.write(f"\tqi{id} -> q{id}\n")
-
-            # draw connections
-            for start, end in self.graph.edges:
-                label = ",".join(sorted(list(self.graph.edges[(start, end)])))
-                f.write(f'\tq{start} -> q{end} [label="{label}"];\n')
-
-            # footer
-            f.write("}")
-
-    def to_png(self, name: str):
-        self.to_dot(name)
-        graphviz.render("dot", "png", name + ".dot", outfile=name + ".png")
-
-
-class FiniteStateMachine(RFSM):
-    def __init__(self, graph: Graph):
-        super().__init__(graph)
-
-    def cast_to_node(func):
-        def cast(self, node):
-            if isinstance(node, int):
-                node = self.graph.get_node(node)
-                if node is None:
-                    raise NodeNotExists
-            return func(self, node)
-        return cast
+        self.initials = set() if initials is None else initials
+        self.finals = set() if finals is None else finals
     
-    @cast_to_node
-    def is_node_accessible(self, node: int | Node):
-        for n in self.initials:
-            if self.exist_path(n, node):
+    def get_nodes(self):
+        return self.graph.nodes
+    
+    def get_table(self):
+        return self.graph.table
+    
+    def get_initials(self):
+        return self.initials
+    
+    def get_finals(self):
+        return self.finals
+    
+    def set_initial(self, node):
+        if node not in self.get_nodes():
+            self.add_node(node)
+        self.initials.add(node)
+    
+    def set_final(self, node):
+        if node not in self.get_nodes():
+            self.add_node(node)
+        self.finals.add(node)
+    
+    def remove_initial(self, node):
+        initials = self.get_initials()
+        if node in initials:
+            initials.remove(node)
+    
+    def remove_final(self, node):
+        finals = self.get_finals()
+        if node in finals:
+            finals.remove(node)
+    
+    def add_sub_set(self, node, initial, final):
+        if initial: self.set_initial(node)
+        if final:   self.set_final(node)
+    
+    def add_node(self, node, initial=False, final=False):
+        self.add_sub_set(node, initial, final)
+        self.graph.add_node()
+    
+    def connect(self, src, dest, value, src_i=False, src_f=False, dest_i=False, dest_f=False):
+        self.add_node(src, src_i, src_f)
+        self.add_node(dest, dest_i, dest_f)
+        self.graph.connect(src, dest, value)
+    
+    def deconnect(self, src, dest):
+        self.graph.deconnect(src, dest)
+    
+    def remove_node(self, node):
+        self.remove_initial(node)
+        self.remove_final(node)
+        self.graph.remove_node(node)
+        
+    def render(self, format='png', keep_source=False):
+        initials = self.get_initials()
+        finals = self.get_finals()
+        table = self.get_table()
+        nodes = self.get_nodes()
+        
+        f = graphviz.Digraph('automaton')
+        f.attr(rankdir='LR', size="8,5")
+        
+        # arrow for initials states
+        for node in initials:
+            f.attr('node', shape='point')
+            f.node(f'qi{node}')
+        
+        # finals states
+        for node in nodes:
+            if node in finals:
+                f.attr('node', shape='doublecircle')
+                f.node(f'{node}')
+            else:
+                f.attr('node', shape='circle')
+                f.node(f'{node}')
+            if node in initials:
+                f.edge(f'qi{node}', f'{node}')
+        
+        # states
+        f.attr('node', shape='circle')
+        for src, dest in table:
+            f.edge(f'{src}', f'{dest}', label=",".join(sorted(list(table[(src, dest)]))))
+        
+        f.render(format=format, cleanup=not keep_source)
+    
+    def is_node_accessible(self, node):
+        if node in self.get_initials():
+            return True
+        for init in self.get_initials():
+            if self.graph.exists_path(init, node):
                 return True
         return False
-
-    @cast_to_node
-    def is_node_coaccessible(self, node: int | Node):
-        for n in self.finals:
-            if self.exist_path(node, n):
+    
+    def is_accessible(self):
+        for node in self.get_nodes():
+            if not self.is_node_accessible(node):
+                return False
+        return True
+    
+    def is_node_coaccessible(self, node):
+        if node in self.get_finals():
+            return True
+        for final in self.get_finals():
+            if self.graph.exists_path(node, final):
                 return True
         return False
+    
+    def is_coaccessible(self):
+        for node in self.get_nodes():
+            if not self.is_node_coaccessible(node):
+                return False
+        return True
 
-def create_fsm(table: list[tuple[int, int, str]], init: set[int], final: set[int]):
+def create_fsm(table: list[tuple[int, int, str]], initials: set[int], finals: set[int]):
     graph = Graph()
-    nodes = {}
-    for start, end, value in table:
-        if start not in nodes:
-            nodes[start] = Node(start in init, start in final)
-        if end not in nodes:
-            nodes[end] = Node(end in init, end in final)
-        graph.connect(nodes[start], nodes[end], value)
-    return FiniteStateMachine(graph)
+    for src, dest, value in table:
+        graph.connect(src, dest, value)
+    return FSM(graph, initials, finals)
 
 
 if __name__ == "__main__":
@@ -147,5 +144,5 @@ if __name__ == "__main__":
         {0, 4},
         {4},
     )
-    print(fsm1)
-    print(fsm1.is_node_accessible(4))
+    fsm1.render('pdf')
+    
